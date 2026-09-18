@@ -818,11 +818,11 @@ class Rock_The_Slackbot_Hooks {
 			 *
 			 * Add some more info for plugins and themes.
 			 */
-			if ( 'core' != $upgrade_type ) {
+			if ( 'core' == $upgrade_type ) {
 
 				// Store version numbers for the filters.
 				$event_args['current_version'] = $wp_version;
-				$event_args['old_version'] = $pre_upgrade_info['core']['version'];
+				$event_args['old_version'] = isset( $pre_upgrade_info['core']['version'] ) ? $pre_upgrade_info['core']['version'] : '';
 
 			} elseif ( 'core' != $upgrade_type ) {
 
