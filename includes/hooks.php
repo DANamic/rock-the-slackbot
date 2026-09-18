@@ -127,7 +127,7 @@ class Rock_The_Slackbot_Hooks {
 	 * @access  private
 	 * @return  void
 	 */
-	private function __wakeup() {}
+	public function __wakeup() {}
 
 	/**
 	 * Retrieves saved outgoing webhooks.

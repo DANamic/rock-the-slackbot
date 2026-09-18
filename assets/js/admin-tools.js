@@ -145,6 +145,7 @@
 			cache: false,
 			data: {
 				action: 'test_webhook_url',
+				nonce: rock_the_slackbot.test_nonce,
 				webhook_url: $webhook_url,
 				channel: $('#rts-webhook-channel').val(), // If blank, will send to default channel
 			},

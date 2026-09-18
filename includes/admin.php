@@ -239,6 +239,7 @@ class Rock_The_Slackbot_Admin {
 
 			// Need to send some data to our script.
 			wp_localize_script( 'rock-the-slackbot-admin-tools', 'rock_the_slackbot', array(
+				'test_nonce' => wp_create_nonce( 'rts_test_webhook_url' ),
 				'delete_webhook_conf' => __( 'Are you sure you want to delete this webhook?', 'rock-the-slackbot' ),
 				'webhook_test_responses' => array(
 					'error'     => sprintf( __( 'We tried to send a message to %s and it failed.', 'rock-the-slackbot' ), 'Slack' ),
@@ -1356,6 +1357,12 @@ class Rock_The_Slackbot_Admin {
 			return false;
 		}
 
+		// A valid nonce proves intent, not permission: require the capability that can manage these settings.
+		$capability = $this->is_network_admin ? 'manage_network_options' : 'manage_options';
+		if ( ! current_user_can( $capability ) ) {
+			return false;
+		}
+
 		// Check the nonce itself.
 		if ( ! wp_verify_nonce( $nonce, 'rts_delete_outgoing_webhook' ) ) {
 			$die_message = __( 'Oops. Looks like something went wrong.', 'rock-the-slackbot' );
@@ -1513,8 +1520,30 @@ class Rock_The_Slackbot_Admin {
 	 */
 	public function ajax_test_webhook_url() {
 
+		/*
+		 * This handler had no capability check and no nonce, so any logged-in user could make the site send an
+		 * HTTP POST to a URL of their choosing (server-side request forgery, including at internal addresses such
+		 * as the cloud metadata service). It is registered for logged-in users only, but that is not a permission.
+		 */
+		$capability = is_multisite() ? 'manage_network_options' : 'manage_options';
+		if ( ! current_user_can( $capability ) ) {
+			wp_send_json_error( array( 'error' => 'insufficient permissions' ), 403 );
+		}
+		check_ajax_referer( 'rts_test_webhook_url', 'nonce' );
+
 		// Set the passed webhook URL.
-		$webhook_url = ! empty( $_POST['webhook_url'] ) ? $_POST['webhook_url'] : null;
+		$webhook_url = ! empty( $_POST['webhook_url'] ) ? esc_url_raw( wp_unslash( $_POST['webhook_url'] ) ) : null;
+
+		/*
+		 * Only ever test a real Slack webhook endpoint. Filterable for other Slack-compatible receivers, but the
+		 * default keeps an attacker-supplied URL from reaching anything else.
+		 */
+		$allowed_hosts = apply_filters( 'rock_the_slackbot_test_allowed_hosts', array( 'hooks.slack.com' ) );
+		$host          = $webhook_url ? wp_parse_url( $webhook_url, PHP_URL_HOST ) : '';
+		$scheme        = $webhook_url ? wp_parse_url( $webhook_url, PHP_URL_SCHEME ) : '';
+		if ( 'https' !== $scheme || ! in_array( strtolower( (string) $host ), $allowed_hosts, true ) ) {
+			wp_send_json_error( array( 'error' => 'webhook URL must be an https Slack endpoint' ), 400 );
+		}
 
 		// We must have a URL and message.
 		if ( $webhook_url ) {

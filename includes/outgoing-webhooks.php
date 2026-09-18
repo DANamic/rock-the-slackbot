@@ -62,7 +62,7 @@ class Rock_The_Slackbot_Outgoing_Webhooks {
 	 * @access	private
 	 * @return	void
 	 */
-	private function __wakeup() {}
+	public function __wakeup() {}
 
 	/**
 	 * Sends a payload to Slack.

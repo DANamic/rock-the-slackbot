@@ -157,7 +157,7 @@ class Rock_The_Slackbot {
 	 * @access	private
 	 * @return	void
 	 */
-	private function __wakeup() {}
+	public function __wakeup() {}
 
 	/**
 	 * Runs when the plugin is installed.
